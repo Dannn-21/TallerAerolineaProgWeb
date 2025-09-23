@@ -10,11 +10,11 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @Table(name = "seat_inventory")
-public class Seatinventory {
+public class SeatInventory {
     public enum Cabin { ECONOMY, PREMIUM_ECONOMY, BUSINESS, FIRST }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Enumerated(EnumType.STRING)

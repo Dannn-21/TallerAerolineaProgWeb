@@ -16,7 +16,7 @@ import java.util.List;
 @Table(name = "bookings")
 public class Booking {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Column(nullable = false) private OffsetDateTime createdAt;
@@ -30,4 +30,13 @@ public class Booking {
             orphanRemoval = true)
     @Builder.Default
     private List<BookingItem> items = new ArrayList<>();
+
+    public void addItem(BookingItem item) {
+        if (item == null) return;
+        if (this.items == null) this.items = new ArrayList<>();
+        this.items.add(item);
+        item.setBooking(this);
+    }
+
+
 }

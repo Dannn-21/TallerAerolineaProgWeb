@@ -14,7 +14,7 @@ import java.util.List;
 @Table(name = "airlines")
 public class Airline {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Column(nullable = false)
@@ -28,4 +28,12 @@ public class Airline {
             orphanRemoval = true)
     @Builder.Default
     private List<Flight> flights = new ArrayList<>();
+
+   public void addFlight(Flight flight){
+       if(this.flights == null){
+           this.flights = new ArrayList<>();
+       }
+       this.flights.add(flight);
+       flights.setAirline(this);
+   }
 }

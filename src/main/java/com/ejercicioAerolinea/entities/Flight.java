@@ -50,11 +50,25 @@ public class Flight {
             cascade = CascadeType.ALL,
             orphanRemoval = true)
     @Builder.Default
-    private List<Seatinventory> seatInventories = new ArrayList<>();
+    private List<SeatInventory> seatInventories = new ArrayList<>();
 
     @OneToMany(mappedBy = "flight",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
     @Builder.Default
     private List<BookingItem> bookingItems = new ArrayList<>();
+
+    public void addTag(Tag tag) {
+        if (tag == null) return;
+        if (this.tags == null) this.tags = new HashSet<>();
+
+        if (this.tags.add(tag)) {
+            if (tag.getFlights() == null) {
+                tag.setFlights(new HashSet<>());
+            }
+            tag.getFlights().add(this);
+        }
+    }
+
+
 }

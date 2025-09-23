@@ -21,4 +21,5 @@ public class PassengerProfile {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "passenger_id", unique = true, nullable = false)
     private Passenger passenger;
+
 }

@@ -14,12 +14,12 @@ import java.math.BigDecimal;
 @Table(name = "booking_items")
 public class BookingItem {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private Seatinventory.Cabin cabin;
+    private SeatInventory.Cabin cabin;
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
