@@ -11,6 +11,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Table(name = "airlines")
 public class Airline {
     @Id
@@ -34,6 +35,6 @@ public class Airline {
            this.flights = new ArrayList<>();
        }
        this.flights.add(flight);
-       flights.setAirline(this);
+       flight.setAirline(this);    ;
    }
 }
