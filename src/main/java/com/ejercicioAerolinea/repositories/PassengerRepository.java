@@ -9,8 +9,9 @@ import java.util.Optional;
 
 public interface PassengerRepository extends JpaRepository<Passenger, Long> {
 
-
     Optional<Passenger> findByEmailIgnoreCase(String email);
+
+    boolean existsByEmailIgnoreCase(String email);
 
     @Query("""
            select p

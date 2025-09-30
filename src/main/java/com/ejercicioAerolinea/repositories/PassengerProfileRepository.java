@@ -1,4 +1,7 @@
 package com.ejercicioAerolinea.repositories;
 
-public interface PassengerProfileRepository {
+import com.ejercicioAerolinea.entities.PassengerProfile;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PassengerProfileRepository extends JpaRepository <PassengerProfile, Long>{
 }
