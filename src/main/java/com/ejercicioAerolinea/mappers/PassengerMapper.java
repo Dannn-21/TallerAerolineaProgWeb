@@ -3,56 +3,39 @@ package com.ejercicioAerolinea.mappers;
 import com.ejercicioAerolinea.api.dto.PassengerDTO;
 import com.ejercicioAerolinea.entities.Passenger;
 import com.ejercicioAerolinea.entities.PassengerProfile;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.BeanMapping;
+import org.mapstruct.AfterMapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
-public class PassengerMapper {
+@Mapper (componentModel = "spring")
+public interface PassengerMapper {
 
-    public static Passenger toEntity(PassengerDTO.PassengerCreateRequest dto) {
-        Passenger.PassengerBuilder builder = Passenger.builder()
-                .fullName(dto.fullName())
-                .email(dto.email());
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "bookings", ignore = true)
+    @Mapping(target = "profile", expression = "java(toProfile(dto.profile()))")
+    Passenger toEntity(PassengerDTO.PassengerCreateRequest dto);
 
-        if (dto.profile() != null) {
-            PassengerProfile profile = PassengerProfile.builder()
-                    .phone(dto.profile().phone())
-                    .countryCode(dto.profile().countryCode())
-                    .build();
-            builder.profile(profile);
-        }
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "bookings", ignore = true)
+    void updateEntity(PassengerDTO.PassengerUpdateRequest dto, @MappingTarget Passenger entity);
 
-        return builder.build();
+    @Mapping(target = "profile", expression = "java(toProfileDto(entity.getProfile()))")
+    PassengerDTO.PassengerResponse toResponse(Passenger entity);
+
+    // helpers simples
+    default PassengerProfile toProfile(PassengerDTO.PassengerProfileDto dto){
+        if (dto == null) return null;
+        return PassengerProfile.builder().phone(dto.phone()).countryCode(dto.countryCode()).build();
+    }
+    default PassengerDTO.PassengerProfileDto toProfileDto(PassengerProfile p){
+        return p == null ? null : new PassengerDTO.PassengerProfileDto(p.getPhone(), p.getCountryCode());
     }
 
-    public static void updateEntity(Passenger passenger, PassengerDTO.PassengerUpdateRequest dto) {
-        if (dto.fullName() != null) {
-            passenger.setFullName(dto.fullName());
-        }
-        if (dto.email() != null) {
-            passenger.setEmail(dto.email());
-        }
-        if (dto.profile() != null) {
-            if (passenger.getProfile() == null) {
-                passenger.setProfile(PassengerProfile.builder().build());
-            }
-            passenger.getProfile().setPhone(dto.profile().phone());
-            passenger.getProfile().setCountryCode(dto.profile().countryCode());
-        }
-    }
-
-    public static PassengerDTO.PassengerResponse toResponse(Passenger passenger) {
-        PassengerDTO.PassengerProfileDto profileDto = null;
-
-        if (passenger.getProfile() != null) {
-            profileDto = new PassengerDTO.PassengerProfileDto(
-                    passenger.getProfile().getPhone(),
-                    passenger.getProfile().getCountryCode()
-            );
-        }
-
-        return new PassengerDTO.PassengerResponse(
-                passenger.getId(),
-                passenger.getFullName(),
-                passenger.getEmail(),
-                profileDto
-        );
+    @AfterMapping
+    default void link(@MappingTarget Passenger p){
+        if (p.getProfile()!=null) p.getProfile().setPassenger(p);
     }
 }

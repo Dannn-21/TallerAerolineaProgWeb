@@ -8,43 +8,52 @@ import com.ejercicioAerolinea.repositories.FlightRepository;
 import com.ejercicioAerolinea.repositories.SeatInventoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class SeatInventoryService {
 
+    private final SeatInventoryMapper seatInventoryMapper;
     private final SeatInventoryRepository seatInventoryRepository;
     private final FlightRepository flightRepository;
 
-    @Transactional
     public SeatInventoryDTO.SeatInventoryResponse create(SeatInventoryDTO.SeatInventoryCreateRequest dto) {
         Flight f = flightRepository.findById(dto.flightId())
                 .orElseThrow(() -> new EntityNotFoundException("Flight not found"));
-        SeatInventory si = SeatInventoryMapper.toEntity(dto, f);
-        seatInventoryRepository.save(si);
-        return SeatInventoryMapper.toResponse(si);
+        SeatInventory inv = seatInventoryMapper.toEntity(dto, f);
+        seatInventoryRepository.save(inv);
+        return seatInventoryMapper.toResponse(inv);
     }
 
     @Transactional(readOnly = true)
     public SeatInventoryDTO.SeatInventoryResponse getById(Long id) {
-        SeatInventory si = seatInventoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("SeatInventory not found"));
-        return SeatInventoryMapper.toResponse(si);
+        return seatInventoryRepository.findById(id)
+                .map(seatInventoryMapper::toResponse)
+                .orElseThrow(() -> new EntityNotFoundException("Seat inventory not found"));
     }
 
-    @Transactional
-    public SeatInventoryDTO.SeatInventoryResponse update(
-            Long id,
-            SeatInventoryDTO.SeatInventoryUpdateRequest dto
-    ) {
-        SeatInventory si = seatInventoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("SeatInventory not found"));
+    @Transactional(readOnly = true)
+    public Page<SeatInventoryDTO.SeatInventoryResponse> list(Pageable pageable) {
+        return seatInventoryRepository.findAll(pageable).map(seatInventoryMapper::toResponse);
+    }
 
-        Flight f = null;
+    public SeatInventoryDTO.SeatInventoryResponse update(Long id, SeatInventoryDTO.SeatInventoryUpdateRequest dto) {
+        SeatInventory inv = seatInventoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Seat inventory not found"));
+        Flight f = inv.getFlight(); // mantener vuelo actual
+        seatInventoryMapper.updateEntity(dto, inv, f);
+        return seatInventoryMapper.toResponse(inv);
+    }
 
-        SeatInventoryMapper.updateEntity(si, dto, f);
-        return SeatInventoryMapper.toResponse(si);
+    public void delete(Long id) {
+        if (!seatInventoryRepository.existsById(id)) {
+            throw new EntityNotFoundException("Seat inventory not found");
+        }
+        seatInventoryRepository.deleteById(id);
     }
 }

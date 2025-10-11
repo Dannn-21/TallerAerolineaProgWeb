@@ -5,72 +5,31 @@ import com.ejercicioAerolinea.entities.Airline;
 import com.ejercicioAerolinea.entities.Airport;
 import com.ejercicioAerolinea.entities.Flight;
 import com.ejercicioAerolinea.entities.Tag;
+import org.mapstruct.*;
 
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-public class FlightMapper {
+@Mapper(componentModel = "spring")
+public interface FlightMapper {
 
-    public static Flight toEntity(FlightDTO.FlightCreateRequest dto,
-                                  Airline airline,
-                                  Airport origin,
-                                  Airport destination,
-                                  Set<Tag> tags) {
-        Flight f = Flight.builder()
-                .number(dto.number())
-                .airline(airline)
-                .origin(origin)
-                .destination(destination)
-                .departureTime(dto.departureTime())
-                .arrivalTime(dto.arrivalTime())
-                .build();
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "airline", expression = "java(airline)")
+    @Mapping(target = "origin", expression = "java(origin)")
+    @Mapping(target = "destination", expression = "java(destination)")
+    @Mapping(target = "tags", expression = "java(tags)")
+    Flight toEntity(FlightDTO.FlightCreateRequest dto, Airline airline, Airport origin, Airport destination, Set<Tag> tags);
 
-        if (tags != null) {
-            tags.forEach(f::addTag); // helper mantiene ambos lados
-        }
-        return f;
-    }
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "airline", expression = "java(airline)")
+    @Mapping(target = "origin", expression = "java(origin)")
+    @Mapping(target = "destination", expression = "java(destination)")
+    @Mapping(target = "tags", expression = "java(tags)")
+    void updateEntity(FlightDTO.FlightUpdateRequest dto, @MappingTarget Flight entity,
+                      Airline airline, Airport origin, Airport destination, Set<Tag> tags);
 
-    public static void updateEntity(Flight f,
-                                    FlightDTO.FlightUpdateRequest dto,
-                                    Airline airline,        // puede ser null si no cambia
-                                    Airport origin,
-                                    Airport destination,
-                                    Set<Tag> tags) {
-        if (dto.number() != null) f.setNumber(dto.number());
-        if (airline != null) f.setAirline(airline);
-        if (origin != null) f.setOrigin(origin);
-        if (destination != null) f.setDestination(destination);
-        if (dto.departureTime() != null) f.setDepartureTime(dto.departureTime());
-        if (dto.arrivalTime() != null) f.setArrivalTime(dto.arrivalTime());
-
-        if (tags != null) {
-            if (f.getTags() != null) {
-                f.getTags().forEach(t -> t.getFlights().remove(f));
-                f.getTags().clear();
-            }
-            tags.forEach(f::addTag);
-        }
-    }
-
-    public static FlightDTO.FlightResponse toResponse(Flight f) {
-        Airline a = f.getAirline();
-        Airport o = f.getOrigin();
-        Airport d = f.getDestination();
-
-        FlightDTO.AirlineSummary airline = new FlightDTO.AirlineSummary(a.getCode(), a.getName());
-        FlightDTO.AirportSummary origin = new FlightDTO.AirportSummary(o.getCode(), o.getName(), o.getCity());
-        FlightDTO.AirportSummary dest   = new FlightDTO.AirportSummary(d.getCode(), d.getName(), d.getCity());
-
-        List<String> tagNames = f.getTags() == null ? List.of()
-                : f.getTags().stream().map(Tag::getName).sorted().collect(Collectors.toList());
-
-        return new FlightDTO.FlightResponse(
-                f.getId(), f.getNumber(),
-                airline, origin, dest,
-                f.getDepartureTime(), f.getArrivalTime(),
-                tagNames
-        );
-    }
+    @Mapping(target = "airline", expression = "java(new FlightDTO.AirlineSummary(f.getAirline().getCode(), f.getAirline().getName()))")
+    @Mapping(target = "origin", expression = "java(new FlightDTO.AirportSummary(f.getOrigin().getCode(), f.getOrigin().getName(), f.getOrigin().getCity()))")
+    @Mapping(target = "destination", expression = "java(new FlightDTO.AirportSummary(f.getDestination().getCode(), f.getDestination().getName(), f.getDestination().getCity()))")
+    @Mapping(target = "tags", expression = "java(f.getTags()==null? java.util.List.of() : f.getTags().stream().map(Tag::getName).sorted().toList())")
+    FlightDTO.FlightResponse toResponse(Flight f);
 }

@@ -8,38 +8,52 @@ import com.ejercicioAerolinea.repositories.PassengerProfileRepository;
 import com.ejercicioAerolinea.repositories.PassengerRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PassengerProfileService {
 
-    private final PassengerProfileRepository profileRepository;
+    private final PassengerProfileMapper passengerProfileMapper;
     private final PassengerRepository passengerRepository;
+    private final PassengerProfileRepository passengerProfileRepository;
 
-    @Transactional
     public PassengerProfileDTO.PassengerProfileResponse create(PassengerProfileDTO.PassengerProfileCreateRequest dto) {
-        Passenger p = passengerRepository.findById(dto.passengerId())
+        Passenger passenger = passengerRepository.findById(dto.passengerId())
                 .orElseThrow(() -> new EntityNotFoundException("Passenger not found"));
-        PassengerProfile profile = PassengerProfileMapper.toEntity(dto, p);
-        // por cascade desde Passenger → Profile, puede bastar con guardar passenger; aquí guardamos perfil por claridad
-        profileRepository.save(profile);
-        return PassengerProfileMapper.toResponse(profile);
+        PassengerProfile profile = passengerProfileMapper.toEntity(dto, passenger);
+        passengerProfileRepository.save(profile);
+        return passengerProfileMapper.toResponse(profile);
     }
 
     @Transactional(readOnly = true)
     public PassengerProfileDTO.PassengerProfileResponse getById(Long id) {
-        PassengerProfile profile = profileRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("PassengerProfile not found"));
-        return PassengerProfileMapper.toResponse(profile);
+        return passengerProfileRepository.findById(id)
+                .map(passengerProfileMapper::toResponse)
+                .orElseThrow(() -> new EntityNotFoundException("Passenger profile not found"));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
+    public Page<PassengerProfileDTO.PassengerProfileResponse> list(Pageable pageable) {
+        return passengerProfileRepository.findAll(pageable).map(passengerProfileMapper::toResponse);
+    }
+
     public PassengerProfileDTO.PassengerProfileResponse update(Long id, PassengerProfileDTO.PassengerProfileUpdateRequest dto) {
-        PassengerProfile profile = profileRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("PassengerProfile not found"));
-        PassengerProfileMapper.updateEntity(profile, dto);
-        return PassengerProfileMapper.toResponse(profile);
+        PassengerProfile profile = passengerProfileRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Passenger profile not found"));
+        Passenger passenger = profile.getPassenger();
+        passengerProfileMapper.updateEntity(dto, profile, passenger);
+        return passengerProfileMapper.toResponse(profile);
+    }
+
+    public void delete(Long id) {
+        if (!passengerProfileRepository.existsById(id)) {
+            throw new EntityNotFoundException("Passenger profile not found");
+        }
+        passengerProfileRepository.deleteById(id);
     }
 }

@@ -2,24 +2,23 @@ package com.ejercicioAerolinea.mappers;
 
 import com.ejercicioAerolinea.api.dto.AirportDTO;
 import com.ejercicioAerolinea.entities.Airport;
+import org.mapstruct.*;
 
-public class AirportMapper {
+@Mapper(componentModel = "spring")
+public interface AirportMapper {
 
-    public static Airport toEntity(AirportDTO.AirportCreateRequest dto) {
-        return Airport.builder()
-                .code(dto.code())
-                .name(dto.name())
-                .city(dto.city())
-                .build();
-    }
+    // CREATE
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "originFlights", ignore = true)
+    @Mapping(target = "destinationFlights", ignore = true)
+    Airport toEntity(AirportDTO.AirportCreateRequest dto);
 
-    public static void updateEntity(Airport ap, AirportDTO.AirportUpdateRequest dto) {
-        if (dto.code() != null) ap.setCode(dto.code());
-        if (dto.name() != null) ap.setName(dto.name());
-        if (dto.city() != null) ap.setCity(dto.city());
-    }
+    // UPDATE parcial
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "originFlights", ignore = true)
+    @Mapping(target = "destinationFlights", ignore = true)
+    void updateEntity(AirportDTO.AirportUpdateRequest dto, @MappingTarget Airport entity);
 
-    public static AirportDTO.AirportResponse toResponse(Airport ap) {
-        return new AirportDTO.AirportResponse(ap.getId(), ap.getCode(), ap.getName(), ap.getCity());
-    }
+    // Response
+    AirportDTO.AirportResponse toResponse(Airport entity);
 }

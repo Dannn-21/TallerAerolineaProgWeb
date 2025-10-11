@@ -2,18 +2,21 @@ package com.ejercicioAerolinea.mappers;
 
 import com.ejercicioAerolinea.api.dto.TagDTO;
 import com.ejercicioAerolinea.entities.Tag;
+import org.mapstruct.*;
 
-public class TagMapper {
+@Mapper(componentModel = "spring")
+public interface TagMapper {
 
-    public static Tag toEntity(TagDTO.TagCreateRequest dto) {
-        return Tag.builder().name(dto.name()).build();
-    }
+    // CREATE
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "flights", ignore = true) // relación ManyToMany con Flight
+    Tag toEntity(TagDTO.TagCreateRequest dto);
 
-    public static void updateEntity(Tag t, TagDTO.TagUpdateRequest dto) {
-        if (dto.name() != null) t.setName(dto.name());
-    }
+    // UPDATE parcial
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "flights", ignore = true)
+    void updateEntity(TagDTO.TagUpdateRequest dto, @MappingTarget Tag entity);
 
-    public static TagDTO.TagResponse toResponse(Tag t) {
-        return new TagDTO.TagResponse(t.getId(), t.getName());
-    }
+    // Response
+    TagDTO.TagResponse toResponse(Tag entity);
 }

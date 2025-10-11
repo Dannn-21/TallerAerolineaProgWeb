@@ -1,52 +1,46 @@
 package com.ejercicioAerolinea.servicios;
 
-import com.ejercicioAerolinea.api.dto.BookingItemDTO;
-import com.ejercicioAerolinea.entities.Booking;
+import com.ejercicioAerolinea.api.dto.BookingItemDTO.*;
 import com.ejercicioAerolinea.entities.BookingItem;
-import com.ejercicioAerolinea.entities.Flight;
 import com.ejercicioAerolinea.mappers.BookingItemMapper;
 import com.ejercicioAerolinea.repositories.BookingItemRepository;
-import com.ejercicioAerolinea.repositories.BookingRepository;
-import com.ejercicioAerolinea.repositories.FlightRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class BookingItemService {
 
-    private final BookingItemRepository bookingItemRepository;
-    private final BookingRepository bookingRepository;
-    private final FlightRepository flightRepository;
+    private final BookingItemRepository repo;
+    private final BookingItemMapper mapper;
 
-    @Transactional
-    public BookingItemDTO.BookingItemResponse create(BookingItemDTO.BookingItemCreateRequest dto) {
-        Booking booking = bookingRepository.findById(dto.bookingId())
-                .orElseThrow(() -> new EntityNotFoundException("Booking not found"));
-        Flight flight = flightRepository.findById(dto.flightId())
-                .orElseThrow(() -> new EntityNotFoundException("Flight not found"));
-        BookingItem item = BookingItemMapper.toEntity(dto, booking, flight);
-        bookingItemRepository.save(item);
-        return BookingItemMapper.toResponse(item);
+    public BookingItemResponse create(BookingItemCreateRequest req) {
+        BookingItem saved = repo.save(mapper.toEntity(req));
+        return mapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)
-    public BookingItemDTO.BookingItemResponse getById(Long id) {
-        BookingItem item = bookingItemRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("BookingItem not found"));
-        return BookingItemMapper.toResponse(item);
+    public BookingItemResponse get(Long id) {
+        return repo.findById(id).map(mapper::toResponse)
+                .orElseThrow(() -> new EntityNotFoundException("BookingItem %d not found".formatted(id)));
     }
 
-    @Transactional
-    public BookingItemDTO.BookingItemResponse update(Long id, BookingItemDTO.BookingItemUpdateRequest dto) {
-        BookingItem item = bookingItemRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("BookingItem not found"));
-        Flight flight = (dto.flightId() == null) ? null :
-                flightRepository.findById(dto.flightId())
-                        .orElseThrow(() -> new EntityNotFoundException("Flight not found"));
-        BookingItemMapper.updateEntity(item, dto, flight);
-        return BookingItemMapper.toResponse(item);
+    @Transactional(readOnly = true)
+    public Page<BookingItemResponse> list(Pageable pageable) {
+        return repo.findAll(pageable).map(mapper::toResponse);
     }
+
+    public BookingItemResponse update(Long id, BookingItemUpdateRequest req) {
+        BookingItem bi = repo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("BookingItem %d not found".formatted(id)));
+        mapper.updateEntity(req, bi);
+        return mapper.toResponse(bi);
+    }
+
+    public void delete(Long id) { repo.deleteById(id); }
 }

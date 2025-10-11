@@ -6,34 +6,48 @@ import com.ejercicioAerolinea.mappers.TagMapper;
 import com.ejercicioAerolinea.repositories.TagRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TagService {
 
+    private final TagMapper tagMapper;
     private final TagRepository tagRepository;
 
-    @Transactional
     public TagDTO.TagResponse create(TagDTO.TagCreateRequest dto) {
-        Tag t = TagMapper.toEntity(dto);
+        Tag t = tagMapper.toEntity(dto);
         tagRepository.save(t);
-        return TagMapper.toResponse(t);
+        return tagMapper.toResponse(t);
     }
 
     @Transactional(readOnly = true)
     public TagDTO.TagResponse getById(Long id) {
-        Tag t = tagRepository.findById(id)
+        return tagRepository.findById(id)
+                .map(tagMapper::toResponse)
                 .orElseThrow(() -> new EntityNotFoundException("Tag not found"));
-        return TagMapper.toResponse(t);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
+    public Page<TagDTO.TagResponse> list(Pageable pageable) {
+        return tagRepository.findAll(pageable).map(tagMapper::toResponse);
+    }
+
     public TagDTO.TagResponse update(Long id, TagDTO.TagUpdateRequest dto) {
         Tag t = tagRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Tag not found"));
-        TagMapper.updateEntity(t, dto);
-        return TagMapper.toResponse(t);
+        tagMapper.updateEntity(dto, t);
+        return tagMapper.toResponse(t);
+    }
+
+    public void delete(Long id) {
+        if (!tagRepository.existsById(id)) {
+            throw new EntityNotFoundException("Tag not found");
+        }
+        tagRepository.deleteById(id);
     }
 }

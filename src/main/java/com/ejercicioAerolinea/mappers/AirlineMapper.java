@@ -2,22 +2,21 @@ package com.ejercicioAerolinea.mappers;
 
 import com.ejercicioAerolinea.api.dto.AirlineDTO;
 import com.ejercicioAerolinea.entities.Airline;
+import org.mapstruct.*;
 
-public class AirlineMapper {
+@Mapper(componentModel = "spring")
+public interface AirlineMapper {
 
-    public static Airline toEntity(AirlineDTO.AirlineCreateRequest dto) {
-        return Airline.builder()
-                .code(dto.code())
-                .name(dto.name())
-                .build();
-    }
+    // CREATE
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "flights", ignore = true)
+    Airline toEntity(AirlineDTO.AirlineCreateRequest dto);
 
-    public static void updateEntity(Airline a, AirlineDTO.AirlineUpdateRequest dto) {
-        if (dto.code() != null) a.setCode(dto.code());
-        if (dto.name() != null) a.setName(dto.name());
-    }
+    // UPDATE parcial
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "flights", ignore = true)
+    void updateEntity(AirlineDTO.AirlineUpdateRequest dto, @MappingTarget Airline entity);
 
-    public static AirlineDTO.AirlineResponse toResponse(Airline a) {
-        return new AirlineDTO.AirlineResponse(a.getId(), a.getCode(), a.getName());
-    }
+    //Response
+    AirlineDTO.AirlineResponse toResponse(Airline entity);
 }

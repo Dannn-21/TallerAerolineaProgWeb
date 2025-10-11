@@ -1,43 +1,36 @@
 package com.ejercicioAerolinea.mappers;
 
 import com.ejercicioAerolinea.api.dto.BookingItemDTO;
-import com.ejercicioAerolinea.entities.Booking;
 import com.ejercicioAerolinea.entities.BookingItem;
-import com.ejercicioAerolinea.entities.Flight;
 import com.ejercicioAerolinea.entities.SeatInventory;
+import org.mapstruct.*;
 
-public class BookingItemMapper {
+@Mapper(componentModel = "spring")
+public interface BookingItemMapper {
 
-    public static BookingItem toEntity(BookingItemDTO.BookingItemCreateRequest dto, Booking booking, Flight flight) {
-        BookingItem item = BookingItem.builder()
-                .flight(flight)
-                .cabin(SeatInventory.Cabin.valueOf(dto.cabin()))
-                .price(dto.price())
-                .segmentOrder(dto.segmentOrder())
-                .build();
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "booking", expression = "java(booking)")
+    @Mapping(target = "flight", expression = "java(flight)")
+    @Mapping(target = "cabin", qualifiedByName = "toCabin")
+    BookingItem toEntity(BookingItemDTO.BookingItemCreateRequest dto);
 
-        booking.addItem(item);
-        return item;
-    }
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "booking", ignore = true)
+    @Mapping(target = "flight", expression = "java(flight)")
+    @Mapping(target = "cabin", qualifiedByName = "toCabinIfNotNull")
+    void updateEntity(BookingItemDTO.BookingItemUpdateRequest dto, @MappingTarget BookingItem entity);
 
-    public static void updateEntity(BookingItem item, BookingItemDTO.BookingItemUpdateRequest dto, Flight flight) {
-        if (flight != null) item.setFlight(flight);
-        if (dto.cabin() != null) item.setCabin(SeatInventory.Cabin.valueOf(dto.cabin()));
-        if (dto.price() != null) item.setPrice(dto.price());
-        if (dto.segmentOrder() != null) item.setSegmentOrder(dto.segmentOrder());
-    }
+    @Mapping(target = "bookingId", source = "booking.id")
+    @Mapping(target = "flightNumber", source = "flight.number")
+    @Mapping(target = "cabin", qualifiedByName = "fromCabin")
+    BookingItemDTO.BookingItemResponse toResponse(BookingItem entity);
 
-    public static BookingItemDTO.BookingItemResponse toResponse(BookingItem item) {
-        Long bookingId = item.getBooking() != null ? item.getBooking().getId() : null;
-        String flightNumber = item.getFlight() != null ? item.getFlight().getNumber() : null;
+    @Named("toCabin") default SeatInventory.Cabin toCabin(String s){ return s==null?null:SeatInventory.Cabin.valueOf(s); }
+    @Named("toCabinIfNotNull") default SeatInventory.Cabin toCabinIfNotNull(String s){ return s==null?null:SeatInventory.Cabin.valueOf(s); }
+    @Named("fromCabin") default String fromCabin(SeatInventory.Cabin c){ return c==null?null:c.name(); }
 
-        return new BookingItemDTO.BookingItemResponse(
-                item.getId(),
-                bookingId,
-                flightNumber,
-                item.getCabin() != null ? item.getCabin().name() : null,
-                item.getPrice(),
-                item.getSegmentOrder()
-        );
+    @AfterMapping
+    default void link(@MappingTarget BookingItem item){
+        if (item.getBooking()!=null) item.getBooking().getItems().add(item);
     }
 }

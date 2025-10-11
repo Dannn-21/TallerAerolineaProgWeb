@@ -3,33 +3,23 @@ package com.ejercicioAerolinea.mappers;
 import com.ejercicioAerolinea.api.dto.SeatInventoryDTO;
 import com.ejercicioAerolinea.entities.Flight;
 import com.ejercicioAerolinea.entities.SeatInventory;
+import org.mapstruct.*;
 
-public class SeatInventoryMapper {
+@Mapper(componentModel = "spring")
+public interface SeatInventoryMapper {
 
-    public static SeatInventory toEntity(SeatInventoryDTO.SeatInventoryCreateRequest dto, Flight flight) {
-        return SeatInventory.builder()
-                .flight(flight)
-                .cabin(SeatInventory.Cabin.valueOf(dto.cabin()))
-                .totalSeats(dto.totalSeats())
-                .availableSeats(dto.availableSeats())
-                .build();
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "flight", expression = "java(flight)")
+    @Mapping(target = "cabin", expression = "java(SeatInventory.Cabin.valueOf(dto.cabin()))")
+    SeatInventory toEntity(SeatInventoryDTO.SeatInventoryCreateRequest dto, Flight flight);
 
-    public static void updateEntity(SeatInventory si, SeatInventoryDTO.SeatInventoryUpdateRequest dto, Flight flight) {
-        if (flight != null) si.setFlight(flight);
-        if (dto.cabin() != null) si.setCabin(SeatInventory.Cabin.valueOf(dto.cabin()));
-        if (dto.totalSeats() != null) si.setTotalSeats(dto.totalSeats());
-        if (dto.availableSeats() != null) si.setAvailableSeats(dto.availableSeats());
-    }
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "flight", expression = "java(flight)")
+    @Mapping(target = "cabin", expression = "java(dto.cabin()==null? null : SeatInventory.Cabin.valueOf(dto.cabin()))")
+    void updateEntity(SeatInventoryDTO.SeatInventoryUpdateRequest dto, @MappingTarget SeatInventory entity, Flight flight);
 
-    public static SeatInventoryDTO.SeatInventoryResponse toResponse(SeatInventory si) {
-        return new SeatInventoryDTO.SeatInventoryResponse(
-                si.getId(),
-                si.getFlight().getId(),
-                si.getFlight().getNumber(),
-                si.getCabin().name(),
-                si.getTotalSeats(),
-                si.getAvailableSeats()
-        );
-    }
+    @Mapping(target = "flightId", source = "flight.id")
+    @Mapping(target = "flightNumber", source = "flight.number")
+    @Mapping(target = "cabin", expression = "java(entity.getCabin().name())")
+    SeatInventoryDTO.SeatInventoryResponse toResponse(SeatInventory entity);
 }
